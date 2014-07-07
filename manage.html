@@ -1,0 +1,371 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+*{margin: 0;padding:0;}
+li{list-style: none;}
+.pswd_dot{ width:308px; overflow:hidden;cursor:pointer;}
+.pswd_dot li{ width:42px; height:42px; line-height:42px; text-align: center; border-radius:21px; float:left; margin:30px;background: #eee;}
+.pswd_dot li.select{ background:#ccc; color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrapper" style="position:absolute;">
+    <ul class="pswd_dot" style="z-index:1;position:absolute;top:0;left:0;">
+        <li class="js_node"></li>
+        <li class="js_node"></li>
+        <li class="js_node"></li>
+        <li class="js_node"></li>
+        <li class="js_node"></li>
+        <li class="js_node"></li>
+        <li class="js_node"></li>
+        <li class="js_node"></li>
+        <li class="js_node"></li>
+    </ul>
+    <canvas style="z-index:0;position:absolute;top:0;left:0;" width="1000" height="1000"></canvas>
+</div>
+<script>
+var $ = function(element) {
+    if (!(this instanceof $)) {
+        return new $(element)
+    }
+
+    if (element instanceof $) {
+        return element
+    }
+
+    if (typeof element === 'string') {
+        element = document.querySelectorAll(element)
+    } else {
+        element = [element]
+    }
+
+    for (var i = 0; i < element.length; i ++) {
+        this[i] = element[i]
+    }
+
+    this.element = element
+    this.store = {}
+}
+
+$.prototype = {
+    on: function(type, fn) {
+        if (typeof type !== 'array') {
+            type = [type]
+        }
+
+        for (var i = 0; i < type.length; i ++) {
+            for (var j = 0; j < this.element.length; j ++) {
+                this.element[j].addEventListener(type[i], fn, false)
+            }
+        }
+    },
+    off: function(type, fn) {
+        if (typeof type !== 'array') {
+            type = [type]
+        }
+
+        for (var i = 0; i < type.length; i ++) {
+            for (var j = 0; j < this.element.length; j ++) {
+                this.element[j].removeEventListener(type[i], fn, false)
+            }
+        }
+    },
+    offset: function() {
+        var bound = this.element[0].getBoundingClientRect()
+        return {
+            left: bound.left,
+            top: bound.top
+        }
+    },
+    outerWidth: function() {
+        return this.element[0].offsetWidth
+    },
+    outerHeight: function() {
+        return this.element[0].offsetHeight
+    },
+    each: function(fn) {
+        [].forEach.call(this.element, function(node, index) {
+            fn(index, node)
+        })
+    },
+    data: function(key, value) {
+        this.element[0].data = this.element[0].data || {}
+        if (value === undefined) {
+            return this.element[0].data[key]
+        }
+
+        this.element[0].data[key] = value
+    },
+    removeData: function(key) {
+        delete this.element[0].data[key]
+    },
+    addClass: function(cls) {
+        this.element[0].classList.add(cls)
+    },
+    removeClass: function(cls) {
+        this.element[0].classList.remove(cls)
+    }
+}
+
+var _ = Infinity
+var v = [0,1,2,3,4,5,6,7,8]
+var a = 1
+var b = Math.sqrt(2)
+var c = Math.sqrt(5)
+
+var g = [
+    [0,a,_,a,b,c,_,c,_],
+    [a,0,a,b,a,b,c,_,c],
+    [_,a,0,c,b,a,_,c,_],
+    [a,b,c,0,a,_,a,b,c],
+    [b,a,b,a,0,a,b,a,b],
+    [c,b,a,_,a,0,c,b,a],
+    [_,c,_,a,b,c,0,a,_],
+    [c,_,c,b,a,b,a,0,a],
+    [_,c,_,c,b,a,_,a,0]
+]
+
+function isEmpty(obj) {
+    for (var k in obj) {
+        return false
+    }
+
+    return true
+}
+
+var graph = function(verts, matrix) {
+    this.verts = verts
+    this.matrix = matrix
+}
+
+graph.prototype.getMin = function(verts, distanceTable) {
+    var min = _
+    var res
+    for (var k in verts) {
+        var index = verts[k]
+
+        if (distanceTable[index] <= min) {
+            min = distanceTable[index]
+            res = k
+        }
+    }
+
+    return res
+}
+
+graph.prototype.findPath = function(v1, v2) {
+    var matrix = this.matrix
+    var distanceTable = {}
+    var verts = {}
+    var prev = {}
+ 
+    prev[v1] = undefined
+    this.verts.forEach(function(v, index) {
+        distanceTable[v] = _
+        verts[v] = index
+    })
+
+    distanceTable[v1] = 0 
+    delete verts[this.verts[v1]]
+
+    var currentVertex = v1
+
+    outer:while (!isEmpty(verts)) {
+        inner:for (var k in verts) {
+            var index = verts[k]
+            if (distanceTable[index] > matrix[currentVertex][index] + distanceTable[currentVertex]) {
+                distanceTable[index] = matrix[currentVertex][index] + distanceTable[currentVertex]
+
+                prev[index] = currentVertex
+            }
+        }
+
+        var vertex = this.getMin(verts, distanceTable)
+        currentVertex = verts[vertex]
+        delete verts[vertex]
+
+        if (currentVertex == v2) {
+            break outer
+        }
+    }
+    
+    var path = []
+    var o = v2
+
+    while (prev[o] != v1) {
+        path.unshift(prev[o])
+        o = prev[o]
+    }
+    
+    return path
+}
+
+/*
+var go = new graph(v, g)
+var o = go.findPath(1, 8)
+*/
+var canvas = document.querySelector('canvas')
+var ctx = canvas.getContext('2d')
+ctx.strokeStyle = '#ccc'
+ctx.lineWidth = 3
+
+var graphObject = new graph(v, g)
+var paths = []
+var records = []
+var startDraw = false
+var doc = $(document)
+var currentNode = undefined
+var nodes = $('.js_node')
+
+var locate = function(elem) {
+    var position = elem.offset()
+
+    position.left -= 30
+    position.top -= 30
+
+    var width = elem.outerWidth() + 60
+    var height = elem.outerHeight() + 60
+    var center = [
+        position.left + Math.floor(width / 2),
+        position.top + Math.floor(height / 2)
+    ]
+
+    return {
+        width: width,
+        height: height,
+        left: position.left,
+        top: position.top,
+        right: position.left + width,
+        bottom: position.top + height,
+        center: center
+    }
+}
+
+function mark(node) {
+    node = $(node)
+    console.log('center:', node.data('center'))
+    paths.push(node.data('center'))
+    records.push(node)
+    
+    node.data('visited', true)
+    node.addClass('select')
+}
+
+function unmark(node) {
+    node = $(node)
+    node.removeData('visited')
+    node.removeClass('select')
+}
+
+function clearRect() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+}
+
+function draw(pageX, pageY) {
+    clearRect()
+    ctx.beginPath()
+
+    for (var i = 0; i < paths.length; i ++) {
+        var point = paths[i]
+
+        if (i === 0) {
+            ctx.moveTo(point[0], point[1])
+        } else {
+            ctx.lineTo(point[0], point[1])
+        }
+    }
+
+    ctx.lineTo(pageX, pageY)
+    ctx.stroke()
+}
+
+function clear() {
+    startDraw = false
+    clearRect()
+    
+    paths = []
+    records = []
+    nodes.each(function(index, node) {
+        unmark(node)
+    })
+}
+
+function handleMousemove(e) {
+    if (!startDraw) {
+        return 
+    }
+
+    draw(e.pageX, e.pageY)
+}
+
+function handleMouseup() {
+    if (!startDraw) {
+        return 
+    }
+
+    doc.off('mousemove', handleMousemove)
+    doc.off('mouseup', handleMouseup)
+    doc.off('selectstart', dontStart)
+    $('.js_node').off('mouseover', handleMouseover)
+
+    console.log('result:', records.map(function(rec) {
+        return rec.data('index')
+    }).join(','))
+}
+
+function handleMouseover(e) {
+    console.log('mouseover')
+    if (!startDraw) {
+        return 
+    }
+
+    var node = $(this)
+    var v1 = currentNode.data('index')
+    var v2
+    var path
+
+    if (!node.data('visited')) {
+        v2 = node.data('index')
+        path = graphObject.findPath(v1, v2)
+
+        if (path.length > 0) {
+            for (var i = 0; i < path.length; i ++) {
+                mark(nodes[path[i]])
+            }
+        }
+        
+        mark(node)
+    }
+
+    currentNode = node
+}
+
+function dontStart(e) {
+    e.preventDefault()
+}
+
+nodes.each(function(index, node) {
+    node = $(node)
+    
+    node.data('center', locate(node).center)
+    node.data('index', index)
+})
+
+nodes.on('mousedown', function(e) {
+    clear()
+
+    startDraw = true
+    currentNode = $(this)
+    mark(currentNode)
+
+    doc.on('mousemove', handleMousemove)
+    doc.on('mouseup', handleMouseup)
+    doc.on('selectstart', dontStart) 
+
+    nodes.on('mouseover', handleMouseover)
+})
+</script>
+</body>
+</html>
